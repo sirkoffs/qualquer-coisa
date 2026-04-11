@@ -45,7 +45,7 @@ async def rotacao_status():
                 status=discord.Status.online,
                 activity=discord.Activity(
                     type=discord.ActivityType.playing,
-                    name=f"Sua mãe na cama"
+                    name=f"After Effects 2023"
                 )
             )
 
