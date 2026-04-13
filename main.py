@@ -32,19 +32,17 @@ client = discord.Client(self_bot=True)
 
 
 # ===== CONFIG =====
-prefix = "$"
+prefix = "$$"
 start_time = time.time()
 
 
-
-
+# 🔥 LISTA DE IDS PERMITIDOS
 ALLOWED_IDS = [
-     932012274569338981,939888558192353310
-       
+    932012274569338981,
+    1473488490795896997, 569633804537430036
 ]
 
 
-# 🔥 controle do status manual
 status_manual = False
 
 
@@ -56,19 +54,20 @@ async def rotacao_status():
 
     while True:
         try:
-            
             if status_manual:
                 await asyncio.sleep(5)
                 continue
 
 
             atividades = [
-                discord.Activity(type=discord.ActivityType.playing, name="After Effects 2025"
+                discord.Activity(type=discord.ActivityType.playing, name="After Effects 2023"),
+                discord.Activity(type=discord.ActivityType.playing, name="Exportando..."),
+                discord.Activity(type=discord.ActivityType.playing, name="After Effects 2023")
             ]
 
 
             await client.change_presence(
-                status=discord.Status.idle,
+                status=discord.Status.dnd,
                 activity=atividades[i % len(atividades)]
             )
 
@@ -85,7 +84,7 @@ async def rotacao_status():
 # ===== EVENTOS =====
 @client.event
 async def on_ready():
-    print(f"🟢 Logado como {client.user}")
+    print(f"🟢 Logado como {client.user} | ID: {client.user.id}")
     client.loop.create_task(rotacao_status())
 
 
@@ -94,23 +93,98 @@ async def handle_command(message):
     global status_manual
 
 
-    # 🔥 controle de permissão
-    if message.author.id not in ALLOWED_IDS:
+    content = message.content.strip()
+    print("MSG:", content, "| AUTHOR:", message.author.id)
+
+
+    # 🔒 PERMISSÃO (SEM MENSAGEM DE ERRO)
+    if message.author.id != client.user.id and message.author.id not in ALLOWED_IDS:
         return
 
 
-    content = message.content.strip()
-    print("COMANDO:", content)
+    # ===== EVAL =====
+    if content.startswith(f"{prefix}eval"):
+        if message.author.id not in ALLOWED_IDS:
+            return
 
 
-    # ===== .setstatus =====
-    if content.startswith(f"{prefix}setstatus"):
+        codigo = content[len(f"{prefix}eval"):].strip()
+
+
+        if not codigo:
+            await message.channel.send("Sem código.")
+            return
+
+
+        import io
+        import contextlib
+        import traceback
+
+
+        if codigo.startswith("```"):
+            codigo = "\n".join(codigo.split("\n")[1:-1])
+
+
+        stdout = io.StringIO()
+
+
+        try:
+            exec_code = "async def _exec(message, client):\n"
+            for linha in codigo.split("\n"):
+                exec_code += f"    {linha}\n"
+
+
+            local_vars = {}
+            exec(exec_code, globals(), local_vars)
+
+
+            with contextlib.redirect_stdout(stdout):
+                resultado = await local_vars["_exec"](message, client)
+
+
+            saida = stdout.getvalue()
+
+
+            resposta = "✅ Código executado com sucesso!\n"
+
+
+            if saida:
+                if len(saida) > 1900:
+                    saida = saida[:1900] + "\n... (cortado)"
+                resposta += f"📤 Saída:\n```py\n{saida}\n```"
+
+
+            if resultado is not None:
+                resultado_str = str(resultado)
+                if len(resultado_str) > 1900:
+                    resultado_str = resultado_str[:1900] + "\n... (cortado)"
+                resposta += f"\n📥 Retorno:\n```py\n{resultado_str}\n```"
+
+
+            if not saida and resultado is None:
+                resposta += "ℹ️ Nenhuma saída foi produzida."
+
+
+            await message.channel.send(resposta)
+
+
+        except Exception:
+            erro = traceback.format_exc()
+            if len(erro) > 1900:
+                erro = erro[:1900] + "\n... (cortado)"
+            await message.channel.send(
+                f"❌ Erro ao executar:\n```py\n{erro}\n```"
+            )
+
+
+    # ===== setstatus =====
+    elif content.startswith(f"{prefix}setstatus"):
         try:
             args = content.split()
 
 
             if len(args) < 2:
-                await message.edit(content="Uso: .setstatus online/dnd/idle/invisible")
+                await message.channel.send("Uso: ?setstatus online/dnd/idle/invisible")
                 return
 
 
@@ -126,24 +200,24 @@ async def handle_command(message):
 
 
             if status_arg in status_map:
-                status_manual = True  # 🔥 ativa modo manual
+                status_manual = True
                 await client.change_presence(status=status_map[status_arg])
-                await message.edit(content=f"Status: {status_arg}")
+                await message.channel.send(f"Status: {status_arg}")
             else:
-                await message.edit(content="Status inválido")
+                await message.channel.send("Status inválido")
 
 
         except Exception as e:
-            await message.edit(content=f"Erro: {e}")
+            await message.channel.send(f"Erro: {e}")
 
 
-    # ===== .resetstatus (volta pro rotativo) =====
+    # ===== resetstatus =====
     elif content.startswith(f"{prefix}resetstatus"):
         status_manual = False
-        await message.edit(content="Status automático ativado")
+        await message.channel.send("Status automático ativado")
 
 
-    # ===== .say =====
+    # ===== say =====
     elif content.startswith(f"{prefix}say"):
         try:
             args = content.split(" ", 2)
@@ -164,7 +238,7 @@ async def handle_command(message):
                     await message.delete()
                     await canal.send(texto)
                 else:
-                    await message.edit(content="Canal não encontrado")
+                    await message.channel.send("Canal não encontrado")
             else:
                 texto = content[len(f"{prefix}say "):]
                 await message.delete()
@@ -172,10 +246,10 @@ async def handle_command(message):
 
 
         except Exception as e:
-            await message.edit(content=f"Erro: {e}")
+            await message.channel.send(f"Erro: {e}")
 
 
-# ===== EVENTOS DE MENSAGEM =====
+# ===== EVENTOS =====
 @client.event
 async def on_message(message):
     await handle_command(message)
@@ -183,6 +257,10 @@ async def on_message(message):
 
 @client.event
 async def on_message_edit(before, after):
+    if after.author.id == client.user.id:
+        return
+
+
     await handle_command(after)
 
 
