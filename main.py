@@ -60,9 +60,9 @@ async def rotacao_status():
 
 
             atividades = [
-                discord.Activity(type=discord.ActivityType.playing, name="After Effects 2023"),
                 discord.Activity(type=discord.ActivityType.playing, name="After Effects 2025"),
-                discord.Activity(type=discord.ActivityType.playing, name="After Effects 2023")
+                discord.Activity(type=discord.ActivityType.playing, name="After Effects 2025"),
+                discord.Activity(type=discord.ActivityType.playing, name="After Effects 2025")
             ]
 
 
