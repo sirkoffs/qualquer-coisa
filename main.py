@@ -60,9 +60,9 @@ async def rotacao_status():
 
 
             atividades = [
-                discord.Activity(type=discord.ActivityType.playing, name="After Effects 1864"),
-                discord.Activity(type=discord.ActivityType.playing, name="After Effects 1864"),
-                discord.Activity(type=discord.ActivityType.playing, name="After Effects 1864")
+                discord.Activity(type=discord.ActivityType.playing, name="Hinata"),
+                discord.Activity(type=discord.ActivityType.playing, name="Hinata"),
+                discord.Activity(type=discord.ActivityType.playing, name="Hinata")
             ]
 
 
